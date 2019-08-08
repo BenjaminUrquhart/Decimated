@@ -55,5 +55,9 @@ Notice something?
 
 This class ignores files that have the word "optifine" in their name. This means we can simply rename mod jars to contain "optifine" and the anticheat will ignore them. Even better, this check ignores subdirectories. If we have liteloader enabled (remember, we already removed the check for it), we can place all our mods in the `1.7.10` subdirectory without needing to rename anything.
 
+**Development**
+
+Turns out you can just ignore the server's cheat request packet. If they just used netty the way it should be that wouldn't be possible.
+
 # Solutions
 There are none. You can make `DecimationClientAnticheat` final and make `Message_Cheating_Request.Handler` check subdirectories, but we can just use bytecode patching to override the checks. The only way to prevent the patching is to implement the entire system using native code, which is infeasable.
