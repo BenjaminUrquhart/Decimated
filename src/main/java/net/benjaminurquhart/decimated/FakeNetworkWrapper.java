@@ -6,17 +6,17 @@ import java.util.List;
 import com.boehmod.lib.utils.BoehModLogger;
 import com.boehmod.lib.utils.BoehModLogger.EnumLogType;
 
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.decimation.mod.utilities.net.messages_minecraft.Message_Cheating;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.Packet;
-import java.util.Arrays;
 
 public class FakeNetworkWrapper extends SimpleNetworkWrapper {
 
 	private SimpleNetworkWrapper real;
-	public static final List<String> FILENAMES = Arrays.asList("Decimation.jar","DecimationVoiceChat.jar");
 	
 	public FakeNetworkWrapper() {
 		super("ctx");
@@ -46,18 +46,19 @@ public class FakeNetworkWrapper extends SimpleNetworkWrapper {
     		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Cheating: " + msg.isCheating);
     		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Directory size: " + msg.directorySize);
     		msg.isCheating = false;
-    		msg.directorySize = calculateSize(new File("mods/"));
+    		msg.directorySize = calculateSize();
     		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "New Directory size: " + msg.directorySize);
     	}
     	real.sendToServer(message);
     }
-	private long calculateSize(File file) {
-		long size = 0L;
-		for(File f : file.listFiles()) {
-			if(f.isFile() && FILENAMES.contains(f.getName())) {
-				size += f.length();
-			}
-		}
+	private long calculateSize() {
+		List<ModContainer> mods = Loader.instance().getActiveModList();
+		long size = mods.stream()
+						.filter(mod -> mod.getModId().equals("deci") || mod.getModId().equals("gvc"))
+						.map(ModContainer::getSource)
+						.peek(file -> BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Found whitelisted mod in " + file.getName() + " (Size: " + file.length() + ")"))
+						.mapToLong(File::length)
+						.sum();
 		return size;
 	}
 }
