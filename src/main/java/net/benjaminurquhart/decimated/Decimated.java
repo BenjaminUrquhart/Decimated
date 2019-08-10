@@ -4,16 +4,20 @@ import com.boehmod.lib.utils.BoehModLogger;
 import com.boehmod.lib.utils.BoehModLogger.EnumLogType;
 
 import sun.misc.Unsafe;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.Instance;
+import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.Mod.EventHandler;
-
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 
 import net.decimation.mod.*;
 //import net.decimation.mod.utilities.net.messages_minecraft.Message_Cheating_Request;
 
 import java.lang.reflect.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Mod(modid=Decimated.MODID, version=Decimated.VERSION, name="Decimated", dependencies="required-after:deci")
 public class Decimated {
@@ -23,6 +27,8 @@ public class Decimated {
 	
 	public static final String MODID = "decimated";
 	public static final String VERSION = "0.0.1a";
+	
+	private static EnumLogType LOG_TYPE = EnumLogType.INITIALIZATION;
 	
 	@SuppressWarnings("restriction")
 	@EventHandler
@@ -96,15 +102,83 @@ public class Decimated {
 			e.printStackTrace();
 		}*/
 	}
+	@EventHandler
+	public void postInit(FMLPostInitializationEvent event) {
+		LOG_TYPE = EnumLogType.ANTICHEAT;
+		List<ModContainer> otherMods = Loader.instance().getActiveModList()
+														.stream()
+														.filter(mod -> !mod.getModId().equals("deci") && !mod.getModId().equals("gvc"))
+														.filter(mod -> !mod.getModId().equals("FML") && !mod.getModId().equals("Forge"))
+														.filter(mod -> !mod.getModId().equals("mcp"))
+														.collect(Collectors.toList());
+		log("Done with mod initialization.");
+		log("The following Forge mod(s) will be hidden from the anticheat check:");
+		for(ModContainer mod : otherMods) {
+			log(String.format("%s %s (ID: %s, File: %s)", mod.getName(), mod.getDisplayVersion(), mod.getModId(), mod.getSource().getName()));
+		}
+		try {
+			Class<?> liteloaderClass = Class.forName("com.mumfrey.liteloader.core.LiteLoader");
+			Object liteloader = liteloaderClass.getMethod("getInstance").invoke(null);
+			
+			Field containerHolderField = liteloaderClass.getDeclaredField("mods");
+			containerHolderField.setAccessible(true);
+			Object holder = containerHolderField.get(liteloader);
+			
+			List<?> mods = (List<?>)holder.getClass().getMethod("getLoadedMods").invoke(holder);
+			
+			Class<?> modInfoClass = Class.forName("com.mumfrey.liteloader.core.ModInfo");
+			
+			Method name = null, version = null, id = null, urlMethod = null;
+			String url;
+			log("The following litemod(s) will be hidden from the anticheat check:");
+			for(Object mod : mods) {
+				mod = modInfoClass.cast(mod);
+				if(name == null) {
+					name = modInfoClass.getMethod("getDisplayName");
+					name.setAccessible(true);
+				}
+				if(version == null) {
+					version = modInfoClass.getMethod("getVersion");
+					name.setAccessible(true);
+				}
+				if(id == null) {
+					id = modInfoClass.getMethod("getIdentifier");
+					id.setAccessible(true);
+				}
+				if(urlMethod == null) {
+					urlMethod = modInfoClass.getMethod("getURL");
+					urlMethod.setAccessible(true);
+				}
+				url = String.valueOf(urlMethod.invoke(mod));
+				if(url.endsWith("/")) {
+					url = url.substring(0, url.length() - 1);
+				}
+				if(url.contains("/")) {
+					url = url.substring(url.lastIndexOf("/") + 1);
+				}
+				if(url.trim().isEmpty()) {
+					url = "<unknown file>";
+				}
+				log(String.format("%s %s (ID: %s, File: %s)", name.invoke(mod), version.invoke(mod), id.invoke(mod), url));
+			}
+		}
+		catch(ClassNotFoundException e) {
+			log("Liteloader is not installed. Skipping litemod check (" + e + ")");
+		} 
+		catch (Exception e) {
+			err("An error occurred when getting litemods:");
+			e.printStackTrace();
+		}
+	}
 	private void makeUnfinal(Field field) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Field modifiers = Field.class.getDeclaredField("modifiers");
 		modifiers.setAccessible(true);
 		modifiers.setInt(field, modifiers.getInt(field) & ~Modifier.FINAL);
 	}
-	private void log(String s) {
-		BoehModLogger.printLine(EnumLogType.INITIALIZATION, s);
+	protected static void log(String s) {
+		BoehModLogger.printLine(LOG_TYPE, s);
 	}
-	private void err(String s) {
-		BoehModLogger.printError(EnumLogType.INITIALIZATION, s);
+	protected static void err(String s) {
+		BoehModLogger.printError(LOG_TYPE, s);
 	}
 }

@@ -3,9 +3,6 @@ package net.benjaminurquhart.decimated;
 import java.io.File;
 import java.util.List;
 
-import com.boehmod.lib.utils.BoehModLogger;
-import com.boehmod.lib.utils.BoehModLogger.EnumLogType;
-
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -42,12 +39,12 @@ public class FakeNetworkWrapper extends SimpleNetworkWrapper {
     public void sendToServer(IMessage message) {
     	if(message instanceof Message_Cheating) {
     		Message_Cheating msg = (Message_Cheating) message;
-    		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Intercepted cheating response");
-    		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Cheating: " + msg.isCheating);
-    		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Directory size: " + msg.directorySize);
+    		Decimated.log("Intercepted cheating response");
+    		Decimated.log("Cheating: " + msg.isCheating);
+    		Decimated.log("Directory size: " + msg.directorySize);
     		msg.isCheating = false;
     		msg.directorySize = calculateSize();
-    		BoehModLogger.printLine(EnumLogType.ANTICHEAT, "New Directory size: " + msg.directorySize);
+    		Decimated.log("New Directory size: " + msg.directorySize);
     	}
     	real.sendToServer(message);
     }
@@ -56,7 +53,7 @@ public class FakeNetworkWrapper extends SimpleNetworkWrapper {
 		long size = mods.stream()
 						.filter(mod -> mod.getModId().equals("deci") || mod.getModId().equals("gvc"))
 						.map(ModContainer::getSource)
-						.peek(file -> BoehModLogger.printLine(EnumLogType.ANTICHEAT, "Found whitelisted mod in " + file.getName() + " (Size: " + file.length() + ")"))
+						.peek(file -> Decimated.log("Found whitelisted mod in " + file.getName() + " (Size: " + file.length() + ")"))
 						.mapToLong(File::length)
 						.sum();
 		return size;
