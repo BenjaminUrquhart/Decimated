@@ -57,7 +57,10 @@ This class ignores files that have the word "optifine" in their name. This means
 
 **Development**
 
-Turns out you can just ignore the server's cheat request packet. If they just used netty the way it should be that wouldn't be possible.
+Turns out you can just ignore the server's cheat request packet. Go figure. I've opted to instead [fake the responses](https://github.com/BenjaminUrquhart/Decimated/blob/master/src/main/java/net/benjaminurquhart/decimated/FakeNetworkWrapper.java#L40) since not responding is easily detectable. 
 
 # Solutions
 There are none. You can make `DecimationClientAnticheat` final and make `Message_Cheating_Request.Handler` check subdirectories, but we can just use bytecode patching to override the checks. The only way to prevent the patching is to implement the entire system using native code, which is infeasable.
+
+# Update
+Shortly after I created this, Scott started obfuscating the decimation builds and completely refactored the anticheat system. The result is the code in its current state does NOT work and will likely crash your game during preinit. Because of its obsolence, I've decided to make this repository public as it is technically no longer an exploit.
