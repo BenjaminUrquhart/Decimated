@@ -1,7 +1,7 @@
 # Decimated
 Exploits weaknesses in the Decimation anticheat system to allow loading of arbitrary mods.
 
-Special thanks to [Natan](https://github.com/natanbc) for creating the bytecode patcher. Now time to fix it...
+Special thanks to [Natan](https://github.com/natanbc) for creating the (unused) bytecode patcher.
 
 [Demo](https://youtu.be/jHSW7JgRFNE)
 
